@@ -1,11 +1,12 @@
-import React from 'react'
-import { useGame, useCurrentTable } from '../../store/gameStore.jsx'
+import React, { useState } from 'react'
+import { useGame, useCurrentTable, getNextMTTBlinds } from '../../store/gameStore.jsx'
 import { hasSidePots } from '../../utils/potCalculator.js'
 import './WinnerModal.css'
 
 export default function WinnerModal() {
   const { dispatch } = useGame()
   const table = useCurrentTable()
+  const [blindsUp, setBlindsUp] = useState(false)
 
   if (!table || !table.showWinner) return null
 
@@ -37,7 +38,8 @@ export default function WinnerModal() {
   }
 
   function handleNewHand() {
-    dispatch({ type: 'NEW_HAND' })
+    dispatch({ type: 'NEW_HAND', payload: { blindsUp } })
+    setBlindsUp(false)
   }
 
   return (
@@ -103,8 +105,24 @@ export default function WinnerModal() {
         {allPotsAwarded && (
           <div className="winner-modal-footer">
             <p className="winner-chips-note">Chips have been distributed.</p>
+            <label className="winner-blinds-up-row">
+              <input
+                type="checkbox"
+                className="winner-blinds-up-checkbox"
+                checked={blindsUp}
+                onChange={e => setBlindsUp(e.target.checked)}
+              />
+              <span className="winner-blinds-up-label">
+                Blinds are up
+                {blindsUp && (
+                  <span className="winner-blinds-up-preview">
+                    {' '}→ {getNextMTTBlinds(table.bigBlind)[0]}/{getNextMTTBlinds(table.bigBlind)[1]}
+                  </span>
+                )}
+              </span>
+            </label>
             <button className="btn-primary winner-new-hand-btn" onClick={handleNewHand}>
-              New Hand
+              Play Next Hand
             </button>
           </div>
         )}
