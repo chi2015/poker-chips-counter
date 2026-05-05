@@ -1,0 +1,216 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-dark: #0d2b1a;
+  --bg-felt: #1a4a2e;
+  --bg-card: #1e2a1e;
+  --bg-card-hover: #243024;
+  --border-card: #2d4a2d;
+  --border-bright: #3d6a3d;
+  --gold: #f0c040;
+  --gold-dark: #c9a030;
+  --gold-light: #f5d060;
+  --danger: #c0392b;
+  --danger-dark: #962d22;
+  --success: #27ae60;
+  --success-dark: #1e8449;
+  --text-primary: #e8f5e9;
+  --text-secondary: #a5c8a5;
+  --text-muted: #6a946a;
+  --text-gold: #f0c040;
+  --shadow: rgba(0, 0, 0, 0.5);
+  --active-glow: rgba(240, 192, 64, 0.3);
+}
+
+html, body {
+  height: 100%;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1rem;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  transition: all 0.15s ease;
+  font-weight: 600;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+input, select {
+  font-family: inherit;
+  font-size: 1rem;
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  border: 1px solid var(--border-card);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+  width: 100%;
+}
+
+input:focus, select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(240, 192, 64, 0.15);
+}
+
+input::placeholder {
+  color: var(--text-muted);
+}
+
+label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.btn-primary {
+  background: var(--gold);
+  color: #0d2b1a;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--gold-light);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(240, 192, 64, 0.4);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--danger-dark);
+}
+
+.btn-success {
+  background: var(--success);
+  color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+  background: var(--success-dark);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-card);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--border-bright);
+}
+
+.btn-outline-gold {
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+}
+
+.btn-outline-gold:hover:not(:disabled) {
+  background: rgba(240, 192, 64, 0.1);
+}
+
+.screen {
+  min-height: 100vh;
+  padding: 1rem;
+  background: var(--bg-felt);
+}
+
+.screen-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-card);
+}
+
+.screen-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gold);
+  text-shadow: 0 0 20px rgba(240, 192, 64, 0.3);
+}
+
+.back-btn {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-card);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.back-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-bright);
+  background: var(--bg-card);
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.chip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(240, 192, 64, 0.1);
+  border: 1px solid rgba(240, 192, 64, 0.3);
+  color: var(--gold);
+  border-radius: 20px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+@media (max-width: 480px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}

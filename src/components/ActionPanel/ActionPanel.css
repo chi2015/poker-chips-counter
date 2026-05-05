@@ -1,0 +1,133 @@
+.action-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.action-panel-player-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.action-panel-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.action-panel-chips {
+  font-size: 0.85rem;
+}
+
+.action-panel-to-call {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-left: auto;
+}
+
+/* Bet input */
+.action-bet-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.action-bet-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-bet-input {
+  flex: 1;
+  font-size: 1rem;
+  padding: 0.55rem 0.75rem;
+}
+
+.action-bet-submit-btn {
+  white-space: nowrap;
+  padding: 0.55rem 1rem;
+  font-size: 0.9rem;
+}
+
+.action-bet-error {
+  font-size: 0.78rem;
+  color: #e74c3c;
+}
+
+.action-quick-bets {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.action-quick-bet-btn {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.78rem;
+  border-radius: 4px;
+}
+
+/* Action buttons */
+.action-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 0.5rem;
+}
+
+.action-btn {
+  padding: 0.7rem 0.5rem;
+  font-size: 0.85rem;
+  border-radius: 8px;
+  min-height: 48px;
+}
+
+.action-fold {
+  background: var(--danger);
+  color: white;
+}
+
+.action-fold:hover:not(:disabled) {
+  background: var(--danger-dark);
+}
+
+.action-check {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-bright);
+}
+
+.action-check:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+}
+
+.action-call {
+  background: var(--success);
+  color: white;
+}
+
+.action-call:hover:not(:disabled) {
+  background: var(--success-dark);
+}
+
+.btn-allin {
+  background: linear-gradient(135deg, #e67e22, #d35400);
+  color: white;
+  font-weight: 700;
+}
+
+.btn-allin:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d35400, #b34300);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(230, 126, 34, 0.4);
+}
+
+@media (max-width: 480px) {
+  .action-buttons {
+    grid-template-columns: 1fr 1fr;
+  }
+}

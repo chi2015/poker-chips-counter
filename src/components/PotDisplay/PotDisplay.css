@@ -1,0 +1,64 @@
+.pot-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pot-main {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.pot-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+
+.pot-amount {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--gold);
+  text-shadow: 0 0 20px rgba(240, 192, 64, 0.4);
+  letter-spacing: -0.02em;
+}
+
+.pot-side-pots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.side-pot {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-card);
+  border-radius: 6px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+}
+
+.side-pot-label {
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+}
+
+.side-pot-amount {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.side-pot-eligible {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+}

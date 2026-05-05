@@ -1,0 +1,191 @@
+.player-card {
+  position: relative;
+  background: var(--bg-card);
+  border: 2px solid var(--border-card);
+  border-radius: 12px;
+  padding: 0.85rem;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.player-card--active {
+  border-color: var(--gold);
+  background: #1e2e14;
+  box-shadow: 0 0 0 1px var(--gold), 0 0 20px var(--active-glow), inset 0 0 20px rgba(240, 192, 64, 0.05);
+}
+
+.player-card--folded {
+  border-color: #1a1a1a;
+  opacity: 0.5;
+}
+
+.player-card--allin {
+  border-color: #e67e22;
+  box-shadow: 0 0 12px rgba(230, 126, 34, 0.2);
+}
+
+.player-card--current {
+  /* highlight for self in multiplayer — can be extended */
+}
+
+/* Active pulse animation */
+.player-card-active-pulse {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  animation: pulse-slide 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Header */
+.player-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.player-card-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.dealer-chip {
+  width: 1.3rem;
+  height: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gold);
+  color: #0d2b1a;
+  border-radius: 50%;
+  font-size: 0.6rem;
+  font-weight: 900;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+
+.player-card-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Status badges */
+.player-status-badge {
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.status-active {
+  background: rgba(39, 174, 96, 0.15);
+  color: var(--success);
+  border: 1px solid rgba(39, 174, 96, 0.3);
+}
+
+.player-card--active .status-active {
+  background: rgba(240, 192, 64, 0.15);
+  color: var(--gold);
+  border-color: rgba(240, 192, 64, 0.4);
+  animation: badge-pulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes badge-pulse {
+  from { opacity: 0.8; }
+  to { opacity: 1; }
+}
+
+.status-folded {
+  background: rgba(192, 57, 43, 0.1);
+  color: var(--danger);
+  border: 1px solid rgba(192, 57, 43, 0.2);
+}
+
+.status-allin {
+  background: rgba(230, 126, 34, 0.15);
+  color: #e67e22;
+  border: 1px solid rgba(230, 126, 34, 0.3);
+}
+
+/* Chips display */
+.player-card-chips {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.player-card-chips-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.player-card-chips-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--gold);
+  letter-spacing: -0.02em;
+}
+
+/* Bet display */
+.player-card-bet {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.5rem;
+  background: rgba(240, 192, 64, 0.08);
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.player-card-bet-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.player-card-bet-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+/* Fold overlay */
+.player-card-fold-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--danger);
+  letter-spacing: 0.1em;
+  opacity: 0.35;
+  pointer-events: none;
+}

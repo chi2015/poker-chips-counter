@@ -1,0 +1,53 @@
+.table-setup {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.table-setup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.field-error {
+  display: block;
+  color: #e74c3c;
+  font-size: 0.8rem;
+  margin-top: 0.3rem;
+}
+
+.table-setup-preview {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.85rem 1rem;
+  background: rgba(240, 192, 64, 0.06);
+  border: 1px solid rgba(240, 192, 64, 0.15);
+  border-radius: 8px;
+  margin: 0.5rem 0;
+}
+
+.preview-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.preview-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.preview-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.table-setup-submit {
+  width: 100%;
+  padding: 0.8rem;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+}
