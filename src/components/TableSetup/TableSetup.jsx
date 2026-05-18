@@ -20,6 +20,15 @@ export default function TableSetup() {
     setErrors(prev => ({ ...prev, [name]: '' }))
   }
 
+  function handleBuyInBlur(e) {
+    const val = Number(e.target.value)
+    if (!val || val <= 0) return
+    const small = Math.max(1, Math.round(val / 200))
+    const big = small * 2
+    setForm(prev => ({ ...prev, smallBlind: String(small), bigBlind: String(big) }))
+    setErrors(prev => ({ ...prev, smallBlind: '', bigBlind: '' }))
+  }
+
   function validate() {
     const errs = {}
     if (!form.name.trim()) errs.name = 'Table name is required'
@@ -83,6 +92,7 @@ export default function TableSetup() {
             min="1"
             value={form.buyIn}
             onChange={handleChange}
+            onBlur={handleBuyInBlur}
             placeholder="1000"
           />
           {errors.buyIn && <span className="field-error">{errors.buyIn}</span>}
