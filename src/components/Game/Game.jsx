@@ -4,6 +4,7 @@ import PlayerCard from '../PlayerCard/PlayerCard.jsx'
 import ActionPanel from '../ActionPanel/ActionPanel.jsx'
 import PotDisplay from '../PotDisplay/PotDisplay.jsx'
 import WinnerModal from '../WinnerModal/WinnerModal.jsx'
+import TournamentWinnerModal from '../TournamentWinnerModal/TournamentWinnerModal.jsx'
 import './Game.css'
 
 const STAGE_LABELS = {
@@ -33,6 +34,8 @@ export default function Game() {
 
   const canAdvanceStage = table.roundComplete && !table.showWinner
   const allAllIn = activePlayers.length === 0 && allInPlayers.length >= 2
+  const inHandPlayers = table.players.filter(p => p.status !== 'folded')
+  const noMoreBetting = activePlayers.length <= 1 && inHandPlayers.length >= 2
 
   function handleNextStage() {
     dispatch({ type: 'NEXT_STAGE' })
@@ -127,7 +130,7 @@ export default function Game() {
               className="btn-primary game-next-stage-btn"
               onClick={handleNextStage}
             >
-              {isLastStage ? 'Showdown' : `Deal ${STAGE_LABELS[STAGE_ORDER[currentStageIdx + 1]] || 'Next'} →`}
+              {isLastStage || noMoreBetting ? 'Showdown' : `Deal ${STAGE_LABELS[STAGE_ORDER[currentStageIdx + 1]] || 'Next'} →`}
             </button>
           )}
 
@@ -188,6 +191,9 @@ export default function Game() {
 
       {/* Winner modal */}
       <WinnerModal />
+
+      {/* Tournament winner modal */}
+      <TournamentWinnerModal />
     </div>
   )
 }
