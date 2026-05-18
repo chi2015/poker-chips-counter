@@ -65,8 +65,9 @@
 }
 
 .dealer-chip {
-  width: 1.3rem;
+  min-width: 1.3rem;
   height: 1.3rem;
+  padding: 0 0.2rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -77,6 +78,18 @@
   font-weight: 900;
   flex-shrink: 0;
   letter-spacing: 0;
+}
+
+.sb-chip {
+  background: #5dade2;
+  color: #0a1628;
+  border-radius: 4px;
+}
+
+.bb-chip {
+  background: #e74c3c;
+  color: #fff;
+  border-radius: 4px;
 }
 
 .player-card-name {

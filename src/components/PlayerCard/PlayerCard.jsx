@@ -25,6 +25,8 @@ export default function PlayerCard({ player, isCurrentPlayer }) {
       <div className="player-card-header">
         <div className="player-card-name-row">
           {player.isDealer && <span className="dealer-chip" title="Dealer">D</span>}
+          {player.isSmallBlind && <span className="dealer-chip sb-chip" title="Small Blind">SB</span>}
+          {player.isBigBlind && <span className="dealer-chip bb-chip" title="Big Blind">BB</span>}
           <span className="player-card-name">{player.name}</span>
         </div>
         <span className={`player-status-badge ${statusClass}`}>
