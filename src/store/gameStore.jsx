@@ -800,7 +800,10 @@ function gameReducer(state, action) {
       const newPot = table.pot - potAmount
       const newPots = table.pots.filter((_, i) => i !== potIndex)
       const playersWithChips = players.filter(p => p.chips > 0)
-      const tournamentWinner = playersWithChips.length === 1 ? playersWithChips[0].id : null
+      // Only declare tournament winner once all pots are distributed
+      const tournamentWinner = newPot <= 0 && playersWithChips.length === 1
+        ? playersWithChips[0].id
+        : null
 
       const finalTable = {
         ...table,
@@ -836,7 +839,10 @@ function gameReducer(state, action) {
       const newPot = table.pot - potAmount
       const newPots = table.pots.filter((_, i) => i !== potIndex)
       const playersWithChips = players.filter(p => p.chips > 0)
-      const tournamentWinner = playersWithChips.length === 1 ? playersWithChips[0].id : null
+      // Only declare tournament winner once all pots are distributed
+      const tournamentWinner = newPot <= 0 && playersWithChips.length === 1
+        ? playersWithChips[0].id
+        : null
 
       const finalTable = {
         ...table,
