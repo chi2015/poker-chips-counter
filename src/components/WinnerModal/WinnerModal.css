@@ -191,6 +191,109 @@
   color: var(--success);
 }
 
+/* Split mode toggle */
+.winner-split-toggle {
+  margin-left: auto;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: transparent;
+  border: 1px solid var(--border-card);
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.winner-split-toggle:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.winner-split-toggle--active {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(240, 192, 64, 0.1);
+}
+
+/* Split section */
+.winner-split-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.winner-split-players {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.winner-split-player {
+  display: grid;
+  grid-template-columns: 1.4rem 1fr auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.7rem;
+  background: var(--bg-dark);
+  border: 2px solid var(--border-card);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  text-align: left;
+}
+
+.winner-split-player:hover {
+  border-color: rgba(240, 192, 64, 0.4);
+}
+
+.winner-split-player--selected {
+  border-color: var(--gold);
+  background: rgba(240, 192, 64, 0.08);
+}
+
+.winner-split-check {
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: var(--gold);
+  width: 1.4rem;
+  text-align: center;
+}
+
+.winner-split-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.winner-split-chips {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.winner-split-share {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--success);
+}
+
+.winner-split-confirm {
+  width: 100%;
+  padding: 0.7rem;
+  font-size: 0.9rem;
+}
+
+.winner-split-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 0.25rem 0;
+}
+
 /* Footer */
 .winner-modal-footer {
   margin-top: 1.25rem;
