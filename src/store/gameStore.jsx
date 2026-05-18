@@ -2,6 +2,21 @@ import React, { createContext, useContext, useReducer, useEffect } from 'react'
 import { saveState, loadState } from '../utils/localStorage.js'
 import { calculatePots, mergePots } from '../utils/potCalculator.js'
 
+// ─── MTT Blind Structure ──────────────────────────────────────────────────────
+
+export const MTT_BLINDS = [
+  [10, 20], [15, 30], [20, 40], [25, 50], [30, 60],
+  [40, 80], [50, 100], [75, 150], [100, 200], [150, 300],
+  [200, 400], [300, 600], [400, 800], [500, 1000], [750, 1500],
+  [1000, 2000], [1500, 3000], [2000, 4000], [3000, 6000], [5000, 10000],
+]
+
+/** Returns the next MTT blind level [sb, bb] with BB strictly greater than currentBigBlind. */
+export function getNextMTTBlinds(currentBigBlind) {
+  const next = MTT_BLINDS.find(([, bb]) => bb > currentBigBlind)
+  return next ?? MTT_BLINDS[MTT_BLINDS.length - 1]
+}
+
 // ─── Initial State ───────────────────────────────────────────────────────────
 
 function createInitialState() {
@@ -27,6 +42,8 @@ function createPlayer(name, chips) {
     totalBet: 0,
     status: 'active', // 'active' | 'folded' | 'all-in'
     isDealer: false,
+    isSmallBlind: false,
+    isBigBlind: false,
     isActive: false,
     hasActed: false, // tracks if player has taken an action this betting round
   }
@@ -111,41 +128,52 @@ function recomputePots(players, existingPot) {
 }
 
 /**
- * Post blinds for a new hand. Assumes dealer is set.
+ * Post blinds for a new hand. Assumes dealer is set via isDealer flag.
+ * Pass explicit sbIdxOverride / bbIdxOverride to skip the default dealer+1/+2 logic.
+ * sbIdxOverride === -1 means dead small blind (nobody posts SB).
  */
-function postBlinds(table) {
-  const players = table.players.map(p => ({ ...p }))
+function postBlinds(table, sbIdxOverride, bbIdxOverride) {
+  const players = table.players.map(p => ({ ...p, isSmallBlind: false, isBigBlind: false }))
   const total = players.length
 
-  const dealerIdx = players.findIndex(p => p.isDealer)
+  let sbIdx, bbIdx
 
-  // Small blind is next after dealer
-  let sbIdx = (dealerIdx + 1) % total
-  // Big blind is next after small blind
-  let bbIdx = (dealerIdx + 2) % total
-
-  // In heads-up, dealer posts small blind
-  if (total === 2) {
-    sbIdx = dealerIdx
-    bbIdx = (dealerIdx + 1) % total
+  if (sbIdxOverride !== undefined && bbIdxOverride !== undefined) {
+    sbIdx = sbIdxOverride
+    bbIdx = bbIdxOverride
+  } else {
+    const dealerIdx = players.findIndex(p => p.isDealer)
+    if (total === 2) {
+      sbIdx = dealerIdx
+      bbIdx = (dealerIdx + 1) % total
+    } else {
+      sbIdx = (dealerIdx + 1) % total
+      bbIdx = (dealerIdx + 2) % total
+    }
   }
 
-  const sbAmount = Math.min(table.smallBlind, players[sbIdx].chips)
+  let pot = 0
+
+  if (sbIdx !== -1) {
+    const sbAmount = Math.min(table.smallBlind, players[sbIdx].chips)
+    players[sbIdx].currentBet = sbAmount
+    players[sbIdx].totalBet = sbAmount
+    players[sbIdx].chips -= sbAmount
+    players[sbIdx].isSmallBlind = true
+    if (players[sbIdx].chips === 0) players[sbIdx].status = 'all-in'
+    pot += sbAmount
+  }
+
   const bbAmount = Math.min(table.bigBlind, players[bbIdx].chips)
-
-  players[sbIdx].currentBet = sbAmount
-  players[sbIdx].totalBet = sbAmount
-  players[sbIdx].chips -= sbAmount
-  if (players[sbIdx].chips === 0) players[sbIdx].status = 'all-in'
-
   players[bbIdx].currentBet = bbAmount
   players[bbIdx].totalBet = bbAmount
   players[bbIdx].chips -= bbAmount
+  players[bbIdx].isBigBlind = true
   if (players[bbIdx].chips === 0) players[bbIdx].status = 'all-in'
+  pot += bbAmount
 
   // First to act preflop is after big blind
   let firstToActIdx = (bbIdx + 1) % total
-  // Skip folded/all-in
   let safetyCounter = 0
   while (players[firstToActIdx].status !== 'active' && safetyCounter < total) {
     firstToActIdx = (firstToActIdx + 1) % total
@@ -156,10 +184,85 @@ function postBlinds(table) {
     p.isActive = i === firstToActIdx
   })
 
-  const pot = sbAmount + bbAmount
   const currentBet = bbAmount
 
   return { players, pot, currentBet, activePlayerIndex: firstToActIdx }
+}
+
+/**
+ * Compute new dealer/SB/BB roles for the next hand using MTT dead-button rules.
+ * Works on the full allPlayers array (including busted chips=0 players) to preserve
+ * seat order, then maps results back to indices within eligiblePlayers.
+ *
+ * Rules:
+ *  - BB always advances one active seat clockwise from last BB
+ *  - Button advances one seat clockwise (may land on empty seat = dead button)
+ *  - SB = first active player strictly between button and BB; if none = dead SB (-1)
+ */
+function computeMTTNextHandRoles(allPlayers, eligiblePlayers) {
+  const total = allPlayers.length
+
+  function nextActiveSeat(fromIdx) {
+    for (let i = 1; i <= total; i++) {
+      const idx = (fromIdx + i) % total
+      if (allPlayers[idx].chips > 0) return idx
+    }
+    return -1
+  }
+
+  function toEligIdx(allIdx) {
+    return eligiblePlayers.findIndex(p => p === allPlayers[allIdx])
+  }
+
+  // Heads-up: dealer = SB, simple rotation, no dead scenarios possible
+  if (eligiblePlayers.length === 2) {
+    const prevDealerAllIdx = allPlayers.findIndex(p => p.isDealer)
+    const newDealerAllIdx = nextActiveSeat(prevDealerAllIdx)
+    const newBBAllIdx = nextActiveSeat(newDealerAllIdx)
+    return {
+      dealerIdx: toEligIdx(newDealerAllIdx),
+      sbIdx: toEligIdx(newDealerAllIdx),
+      bbIdx: toEligIdx(newBBAllIdx),
+    }
+  }
+
+  const prevDealerAllIdx = allPlayers.findIndex(p => p.isDealer)
+  const prevBBAllIdx = allPlayers.findIndex(p => p.isBigBlind)
+  // Fallback for state saved before isBigBlind was tracked
+  const effectivePrevBBAllIdx = prevBBAllIdx !== -1
+    ? prevBBAllIdx
+    : (prevDealerAllIdx !== -1 ? (prevDealerAllIdx + 2) % total : 0)
+
+  // BB moves to next active seat after previous BB
+  const newBBAllIdx = nextActiveSeat(effectivePrevBBAllIdx)
+
+  // Dealer candidate = one seat after old dealer (may be bust = dead button)
+  const prevDealerSeat = prevDealerAllIdx !== -1 ? prevDealerAllIdx : 0
+  const newDealerCandidateAllIdx = (prevDealerSeat + 1) % total
+  const isDeadButton = allPlayers[newDealerCandidateAllIdx].chips === 0
+
+  // Displayed dealer = the dealer candidate if active, otherwise the last active player before it
+  let newDealerDisplayAllIdx = newDealerCandidateAllIdx
+  if (isDeadButton) {
+    for (let i = 1; i <= total; i++) {
+      const idx = (newDealerCandidateAllIdx - i + total) % total
+      if (allPlayers[idx].chips > 0) { newDealerDisplayAllIdx = idx; break }
+    }
+  }
+
+  // SB = first active player strictly between dealer candidate and new BB (clockwise)
+  const dist = (newBBAllIdx - newDealerCandidateAllIdx + total) % total
+  let newSBAllIdx = -1
+  for (let i = 1; i < dist; i++) {
+    const idx = (newDealerCandidateAllIdx + i) % total
+    if (allPlayers[idx].chips > 0) { newSBAllIdx = idx; break }
+  }
+
+  return {
+    dealerIdx: toEligIdx(newDealerDisplayAllIdx),
+    sbIdx: newSBAllIdx !== -1 ? toEligIdx(newSBAllIdx) : -1,
+    bbIdx: toEligIdx(newBBAllIdx),
+  }
 }
 
 // ─── Reducer ─────────────────────────────────────────────────────────────────
@@ -313,11 +416,12 @@ function gameReducer(state, action) {
       const currentStageIdx = stages.indexOf(table.stage)
 
       if (currentStageIdx === stages.length - 1) {
-        // At river — show winner
+        // At river — show winner; recompute pots explicitly so they're never stale/undefined
         const finalTable = {
           ...table,
           showWinner: true,
           roundComplete: false,
+          pots: recomputePots(table.players, table.pot),
         }
         const updatedTables = [...state.tables]
         updatedTables[tableIdx] = finalTable
@@ -350,6 +454,7 @@ function gameReducer(state, action) {
         currentBet: 0,
         activePlayerIndex: firstToActIdx,
         roundComplete: isBettingRoundComplete(players, 0),
+        pots: recomputePots(players, table.pot),
       }
 
       const updatedTables = [...state.tables]
@@ -362,29 +467,32 @@ function gameReducer(state, action) {
       if (tableIdx === -1) return state
       const table = state.tables[tableIdx]
 
-      // Remove busted players (0 chips)
-      const eligiblePlayers = table.players.filter(p => p.chips > 0)
+      // allPlayers still contains busted (chips=0) players — needed for MTT seat-order rotation
+      const allPlayers = table.players
+      const eligiblePlayers = allPlayers.filter(p => p.chips > 0)
       if (eligiblePlayers.length < 2) {
-        // Not enough players to continue — go home
-        return {
-          ...state,
-          currentScreen: 'home',
-        }
+        return { ...state, currentScreen: 'home' }
       }
 
-      // Rotate dealer
-      const dealerIdx = eligiblePlayers.findIndex(p => p.isDealer)
-      const nextDealerIdx = (dealerIdx + 1) % eligiblePlayers.length
+      // Compute new dealer/SB/BB using MTT dead-button rules
+      const { dealerIdx, sbIdx, bbIdx } = computeMTTNextHandRoles(allPlayers, eligiblePlayers)
 
       const players = eligiblePlayers.map((p, i) => ({
         ...p,
-        isDealer: i === nextDealerIdx,
+        isDealer: i === dealerIdx,
+        isSmallBlind: false,
+        isBigBlind: false,
         isActive: false,
         status: 'active',
         currentBet: 0,
         totalBet: 0,
         hasActed: false,
       }))
+
+      const blindsUp = action.payload?.blindsUp ?? false
+      const [nextSB, nextBB] = blindsUp
+        ? getNextMTTBlinds(table.bigBlind)
+        : [table.smallBlind, table.bigBlind]
 
       const newTable = {
         ...table,
@@ -396,9 +504,11 @@ function gameReducer(state, action) {
         pots: [],
         showWinner: false,
         roundComplete: false,
+        smallBlind: nextSB,
+        bigBlind: nextBB,
       }
 
-      const { players: playersWithBlinds, pot, currentBet, activePlayerIndex } = postBlinds(newTable)
+      const { players: playersWithBlinds, pot, currentBet, activePlayerIndex } = postBlinds(newTable, sbIdx, bbIdx)
 
       const finalTable = {
         ...newTable,
@@ -677,24 +787,54 @@ function gameReducer(state, action) {
       if (tableIdx === -1) return state
       const table = state.tables[tableIdx]
 
-      const { winnerId, potAmount } = action.payload
+      const { winnerId, potAmount, potIndex } = action.payload
 
       const players = table.players.map(p =>
         p.id === winnerId ? { ...p, chips: p.chips + potAmount } : p
       )
 
       const newPot = table.pot - potAmount
-      const allAwarded = newPot <= 0
-
-      // Remove the awarded pot from side pots list
-      const newPots = table.pots.filter(p => p.amount !== potAmount || !p.eligiblePlayers.includes(winnerId))
+      const newPots = table.pots.filter((_, i) => i !== potIndex)
 
       const finalTable = {
         ...table,
         players,
         pot: Math.max(0, newPot),
-        pots: allAwarded ? [] : newPots,
-        showWinner: true, // keep modal open until NEW_HAND is explicitly dispatched
+        pots: newPot <= 0 ? [] : newPots,
+        showWinner: true,
+      }
+
+      const updatedTables = [...state.tables]
+      updatedTables[tableIdx] = finalTable
+      return { ...state, tables: updatedTables }
+    }
+
+    case 'SPLIT_POT': {
+      const tableIdx = state.tables.findIndex(t => t.id === state.currentTableId)
+      if (tableIdx === -1) return state
+      const table = state.tables[tableIdx]
+
+      const { winnerIds, potAmount, potIndex } = action.payload
+      if (!winnerIds || winnerIds.length < 2) return state
+
+      const each = Math.floor(potAmount / winnerIds.length)
+      const remainder = potAmount % winnerIds.length
+
+      const players = table.players.map(p => {
+        const wIdx = winnerIds.indexOf(p.id)
+        if (wIdx === -1) return p
+        return { ...p, chips: p.chips + each + (wIdx === 0 ? remainder : 0) }
+      })
+
+      const newPot = table.pot - potAmount
+      const newPots = table.pots.filter((_, i) => i !== potIndex)
+
+      const finalTable = {
+        ...table,
+        players,
+        pot: Math.max(0, newPot),
+        pots: newPot <= 0 ? [] : newPots,
+        showWinner: true,
       }
 
       const updatedTables = [...state.tables]
