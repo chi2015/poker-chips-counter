@@ -66,6 +66,7 @@ function createTable({ name, smallBlind, bigBlind, buyIn }) {
     showWinner: false,
     gameStarted: false,
     roundComplete: false,
+    tournamentWinner: null,
   }
 }
 
@@ -415,8 +416,11 @@ function gameReducer(state, action) {
       const stages = ['preflop', 'flop', 'turn', 'river']
       const currentStageIdx = stages.indexOf(table.stage)
 
-      if (currentStageIdx === stages.length - 1) {
-        // At river — show winner; recompute pots explicitly so they're never stale/undefined
+      const activeCnt = countActivePlayers(table.players)
+      const inHandCnt = countPlayersInHand(table.players)
+
+      // Go to showdown if at river OR if no more betting is possible (≤1 player can act)
+      if (currentStageIdx === stages.length - 1 || (activeCnt <= 1 && inHandCnt >= 2)) {
         const finalTable = {
           ...table,
           showWinner: true,
@@ -795,6 +799,8 @@ function gameReducer(state, action) {
 
       const newPot = table.pot - potAmount
       const newPots = table.pots.filter((_, i) => i !== potIndex)
+      const playersWithChips = players.filter(p => p.chips > 0)
+      const tournamentWinner = playersWithChips.length === 1 ? playersWithChips[0].id : null
 
       const finalTable = {
         ...table,
@@ -802,6 +808,7 @@ function gameReducer(state, action) {
         pot: Math.max(0, newPot),
         pots: newPot <= 0 ? [] : newPots,
         showWinner: true,
+        tournamentWinner,
       }
 
       const updatedTables = [...state.tables]
@@ -828,6 +835,8 @@ function gameReducer(state, action) {
 
       const newPot = table.pot - potAmount
       const newPots = table.pots.filter((_, i) => i !== potIndex)
+      const playersWithChips = players.filter(p => p.chips > 0)
+      const tournamentWinner = playersWithChips.length === 1 ? playersWithChips[0].id : null
 
       const finalTable = {
         ...table,
@@ -835,11 +844,21 @@ function gameReducer(state, action) {
         pot: Math.max(0, newPot),
         pots: newPot <= 0 ? [] : newPots,
         showWinner: true,
+        tournamentWinner,
       }
 
       const updatedTables = [...state.tables]
       updatedTables[tableIdx] = finalTable
       return { ...state, tables: updatedTables }
+    }
+
+    case 'CLOSE_TABLE': {
+      return {
+        ...state,
+        tables: state.tables.filter(t => t.id !== state.currentTableId),
+        currentTableId: null,
+        currentScreen: 'home',
+      }
     }
 
     case 'UPDATE_BLINDS': {
