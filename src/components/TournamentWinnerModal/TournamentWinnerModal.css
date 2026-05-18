@@ -1,0 +1,72 @@
+.tourn-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 1rem;
+  backdrop-filter: blur(6px);
+}
+
+.tourn-modal {
+  background: var(--bg-card);
+  border: 2px solid var(--gold);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 0 60px rgba(240, 192, 64, 0.4), 0 20px 60px rgba(0, 0, 0, 0.7);
+  animation: tourn-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes tourn-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.75) translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.tourn-trophy {
+  font-size: 4rem;
+  margin-bottom: 0.5rem;
+  animation: tourn-bounce 1s ease-in-out infinite alternate;
+}
+
+@keyframes tourn-bounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-8px); }
+}
+
+.tourn-title {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--gold);
+  text-shadow: 0 0 24px rgba(240, 192, 64, 0.6);
+  margin-bottom: 1.25rem;
+}
+
+.tourn-name {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  margin-bottom: 0.4rem;
+}
+
+.tourn-chips {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+}
+
+.tourn-close-btn {
+  width: 100%;
+  padding: 0.85rem;
+  font-size: 1rem;
+}
