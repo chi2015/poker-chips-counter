@@ -191,18 +191,23 @@ function postBlinds(table, sbIdxOverride, bbIdxOverride) {
 }
 
 /**
- * Compute new dealer/SB/BB roles for the next hand using MTT dead-button rules.
+ * Compute new dealer/SB/BB roles for the next hand.
  * Works on the full allPlayers array (including busted chips=0 players) to preserve
  * seat order, then maps results back to indices within eligiblePlayers.
  *
  * Rules:
- *  - BB always advances one active seat clockwise from last BB
- *  - Button advances one seat clockwise (may land on empty seat = dead button)
- *  - SB = first active player strictly between button and BB; if none = dead SB (-1)
+ *  - Dealer always advances to the next occupied seat (empty seats are skipped)
+ *  - SB = next occupied seat after Dealer
+ *  - BB = next occupied seat after SB
+ *  - Heads-up: Dealer == SB
+ *
+ * Once NEW_HAND sets table.players = eligiblePlayers, any busted seats that
+ * the button passed are automatically removed from future rotation.
  */
 function computeMTTNextHandRoles(allPlayers, eligiblePlayers) {
   const total = allPlayers.length
 
+  // Returns the index of the next player with chips > 0, searching clockwise from fromIdx.
   function nextActiveSeat(fromIdx) {
     for (let i = 1; i <= total; i++) {
       const idx = (fromIdx + i) % total
@@ -215,10 +220,15 @@ function computeMTTNextHandRoles(allPlayers, eligiblePlayers) {
     return eligiblePlayers.findIndex(p => p === allPlayers[allIdx])
   }
 
-  // Heads-up: dealer = SB, simple rotation, no dead scenarios possible
+  const prevDealerAllIdx = allPlayers.findIndex(p => p.isDealer)
+  const effectivePrevDealerAllIdx = prevDealerAllIdx !== -1 ? prevDealerAllIdx : 0
+
+  // Dealer always moves to the next occupied seat — never stays on or backs up to an empty seat
+  const newDealerAllIdx = nextActiveSeat(effectivePrevDealerAllIdx)
+  if (newDealerAllIdx === -1) return { dealerIdx: 0, sbIdx: -1, bbIdx: 1 }
+
+  // Heads-up: dealer acts as small blind
   if (eligiblePlayers.length === 2) {
-    const prevDealerAllIdx = allPlayers.findIndex(p => p.isDealer)
-    const newDealerAllIdx = nextActiveSeat(prevDealerAllIdx)
     const newBBAllIdx = nextActiveSeat(newDealerAllIdx)
     return {
       dealerIdx: toEligIdx(newDealerAllIdx),
@@ -227,41 +237,13 @@ function computeMTTNextHandRoles(allPlayers, eligiblePlayers) {
     }
   }
 
-  const prevDealerAllIdx = allPlayers.findIndex(p => p.isDealer)
-  const prevBBAllIdx = allPlayers.findIndex(p => p.isBigBlind)
-  // Fallback for state saved before isBigBlind was tracked
-  const effectivePrevBBAllIdx = prevBBAllIdx !== -1
-    ? prevBBAllIdx
-    : (prevDealerAllIdx !== -1 ? (prevDealerAllIdx + 2) % total : 0)
-
-  // BB moves to next active seat after previous BB
-  const newBBAllIdx = nextActiveSeat(effectivePrevBBAllIdx)
-
-  // Dealer candidate = one seat after old dealer (may be bust = dead button)
-  const prevDealerSeat = prevDealerAllIdx !== -1 ? prevDealerAllIdx : 0
-  const newDealerCandidateAllIdx = (prevDealerSeat + 1) % total
-  const isDeadButton = allPlayers[newDealerCandidateAllIdx].chips === 0
-
-  // Displayed dealer = the dealer candidate if active, otherwise the last active player before it
-  let newDealerDisplayAllIdx = newDealerCandidateAllIdx
-  if (isDeadButton) {
-    for (let i = 1; i <= total; i++) {
-      const idx = (newDealerCandidateAllIdx - i + total) % total
-      if (allPlayers[idx].chips > 0) { newDealerDisplayAllIdx = idx; break }
-    }
-  }
-
-  // SB = first active player strictly between dealer candidate and new BB (clockwise)
-  const dist = (newBBAllIdx - newDealerCandidateAllIdx + total) % total
-  let newSBAllIdx = -1
-  for (let i = 1; i < dist; i++) {
-    const idx = (newDealerCandidateAllIdx + i) % total
-    if (allPlayers[idx].chips > 0) { newSBAllIdx = idx; break }
-  }
+  // Normal (3+ players): SB = next active after dealer, BB = next active after SB
+  const newSBAllIdx = nextActiveSeat(newDealerAllIdx)
+  const newBBAllIdx = nextActiveSeat(newSBAllIdx)
 
   return {
-    dealerIdx: toEligIdx(newDealerDisplayAllIdx),
-    sbIdx: newSBAllIdx !== -1 ? toEligIdx(newSBAllIdx) : -1,
+    dealerIdx: toEligIdx(newDealerAllIdx),
+    sbIdx: toEligIdx(newSBAllIdx),
     bbIdx: toEligIdx(newBBAllIdx),
   }
 }
