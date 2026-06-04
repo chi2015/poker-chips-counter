@@ -98,21 +98,33 @@ export default function ActionPanel() {
     setBetError('')
   }
 
-  // Quick bet presets
+  // Quick bet presets — stage-aware
   const potAmount = table.pot
-  const quickBets = canBet
-    ? [bigBlind, bigBlind * 2, bigBlind * 3, Math.floor(potAmount / 2), potAmount]
-        .filter((v, i, arr) => v > 0 && v <= activePlayer.chips && arr.indexOf(v) === i)
-    : canRaise
+  const isPreflop = table.stage === 'preflop'
+  // For raises the input is total-bet, so pot-sized amounts include the call
+  const potOffset = canRaise ? currentBet : 0
+
+  const presets = isPreflop
     ? [
-        minRaise,
-        Math.floor(currentBet * 1.5),
-        currentBet * 2,
-        Math.floor(potAmount / 2) + currentBet,
-        potAmount + currentBet,
+        { label: '2BB',   amount: bigBlind * 2 },
+        { label: '3BB',   amount: bigBlind * 3 },
+        { label: 'Pot',   amount: potAmount + potOffset },
       ]
-        .filter((v, i, arr) => v > currentBet && v <= activePlayer.chips + activePlayer.currentBet && arr.indexOf(v) === i)
-    : []
+    : [
+        { label: 'Pot/3', amount: Math.floor(potAmount / 3) + potOffset },
+        { label: 'Pot/2', amount: Math.floor(potAmount / 2) + potOffset },
+        { label: 'Pot',   amount: potAmount + potOffset },
+      ]
+
+  const maxValid = activePlayer.chips + activePlayer.currentBet
+  const minValid = canRaise ? currentBet : 0
+
+  const quickBets = presets.filter(({ amount }, i, arr) =>
+    amount > minValid &&
+    amount > 0 &&
+    amount <= maxValid &&
+    arr.findIndex(p => p.amount === amount) === i
+  )
 
   return (
     <div className="action-panel">
@@ -152,13 +164,13 @@ export default function ActionPanel() {
 
           {quickBets.length > 0 && (
             <div className="action-quick-bets">
-              {quickBets.slice(0, 4).map((amount, i) => (
+              {quickBets.map(({ amount, label }) => (
                 <button
-                  key={i}
+                  key={label}
                   className="btn-ghost action-quick-bet-btn"
                   onClick={() => setQuickBet(amount)}
                 >
-                  {amount >= potAmount ? 'Pot' : amount <= bigBlind ? 'BB' : amount}
+                  {label}
                 </button>
               ))}
             </div>
