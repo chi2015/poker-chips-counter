@@ -10,32 +10,40 @@ export default function TableSetup() {
     buyIn: '1000',
     smallBlind: '5',
     bigBlind: '10',
+    levelDurationMinutes: '',
   })
 
   const [errors, setErrors] = useState({})
 
+  const useMTT = form.levelDurationMinutes !== '' && Number(form.levelDurationMinutes) > 0
+
   function handleChange(e) {
     const { name, value } = e.target
-    setForm(prev => ({ ...prev, [name]: value }))
+    setForm(prev => {
+      const next = { ...prev, [name]: value }
+      if (name === 'buyIn') {
+        const val = Number(value)
+        if (val > 0) {
+          const big = Math.max(1, Math.round(val / 100))
+          const small = Math.max(1, Math.round(val / 200))
+          next.bigBlind = String(big)
+          next.smallBlind = String(small)
+        }
+      }
+      return next
+    })
     setErrors(prev => ({ ...prev, [name]: '' }))
-  }
-
-  function handleBuyInBlur(e) {
-    const val = Number(e.target.value)
-    if (!val || val <= 0) return
-    const small = Math.max(1, Math.round(val / 200))
-    const big = small * 2
-    setForm(prev => ({ ...prev, smallBlind: String(small), bigBlind: String(big) }))
-    setErrors(prev => ({ ...prev, smallBlind: '', bigBlind: '' }))
   }
 
   function validate() {
     const errs = {}
     if (!form.name.trim()) errs.name = 'Table name is required'
     if (!form.buyIn || Number(form.buyIn) <= 0) errs.buyIn = 'Buy-in must be > 0'
-    if (!form.smallBlind || Number(form.smallBlind) <= 0) errs.smallBlind = 'Small blind must be > 0'
-    if (!form.bigBlind || Number(form.bigBlind) <= 0) errs.bigBlind = 'Big blind must be > 0'
-    if (Number(form.bigBlind) <= Number(form.smallBlind)) errs.bigBlind = 'Big blind must be > small blind'
+    if (!useMTT) {
+      if (!form.smallBlind || Number(form.smallBlind) <= 0) errs.smallBlind = 'Small blind must be > 0'
+      if (!form.bigBlind || Number(form.bigBlind) <= 0) errs.bigBlind = 'Big blind must be > 0'
+      if (Number(form.bigBlind) <= Number(form.smallBlind)) errs.bigBlind = 'Big blind must be > small blind'
+    }
     return errs
   }
 
@@ -53,6 +61,7 @@ export default function TableSetup() {
         buyIn: Number(form.buyIn),
         smallBlind: Number(form.smallBlind),
         bigBlind: Number(form.bigBlind),
+        levelDurationMinutes: Number(form.levelDurationMinutes) || 0,
       },
     })
   }
@@ -92,41 +101,62 @@ export default function TableSetup() {
             min="1"
             value={form.buyIn}
             onChange={handleChange}
-            onBlur={handleBuyInBlur}
             placeholder="1000"
           />
           {errors.buyIn && <span className="field-error">{errors.buyIn}</span>}
         </div>
 
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="smallBlind">Small Blind</label>
-            <input
-              id="smallBlind"
-              name="smallBlind"
-              type="number"
-              min="1"
-              value={form.smallBlind}
-              onChange={handleChange}
-              placeholder="5"
-            />
-            {errors.smallBlind && <span className="field-error">{errors.smallBlind}</span>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="bigBlind">Big Blind</label>
-            <input
-              id="bigBlind"
-              name="bigBlind"
-              type="number"
-              min="1"
-              value={form.bigBlind}
-              onChange={handleChange}
-              placeholder="10"
-            />
-            {errors.bigBlind && <span className="field-error">{errors.bigBlind}</span>}
-          </div>
+        <div className="form-group">
+          <label htmlFor="levelDurationMinutes">Level Duration (minutes)</label>
+          <input
+            id="levelDurationMinutes"
+            name="levelDurationMinutes"
+            type="number"
+            min="1"
+            value={form.levelDurationMinutes}
+            onChange={handleChange}
+            placeholder="Leave empty for no timer"
+          />
         </div>
+
+        {useMTT ? (
+          <div className="form-group">
+            <label>Blinds</label>
+            <div className="mtt-blinds-info">
+              Starting: {form.smallBlind}/{form.bigBlind} · advances every {form.levelDurationMinutes} min following MTT structure
+            </div>
+          </div>
+        ) : (
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="smallBlind">Small Blind</label>
+              <input
+                id="smallBlind"
+                name="smallBlind"
+                type="number"
+                min="1"
+                value={form.smallBlind}
+                onChange={handleChange}
+                placeholder="5"
+              />
+              {errors.smallBlind && <span className="field-error">{errors.smallBlind}</span>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="bigBlind">Big Blind</label>
+              <input
+                id="bigBlind"
+                name="bigBlind"
+                type="number"
+                min="1"
+                value={form.bigBlind}
+                onChange={handleChange}
+                placeholder="10"
+              />
+              {errors.bigBlind && <span className="field-error">{errors.bigBlind}</span>}
+            </div>
+          </div>
+        )}
 
         <div className="table-setup-preview">
           <div className="preview-item">
@@ -135,8 +165,16 @@ export default function TableSetup() {
           </div>
           <div className="preview-item">
             <span className="preview-label">Blinds</span>
-            <span className="preview-value">{form.smallBlind || 0} / {form.bigBlind || 0}</span>
+            <span className="preview-value">
+              {`${form.smallBlind || 0} / ${form.bigBlind || 0}`}{useMTT ? ' (MTT)' : ''}
+            </span>
           </div>
+          {useMTT && (
+            <div className="preview-item">
+              <span className="preview-label">Level</span>
+              <span className="preview-value">{form.levelDurationMinutes} min</span>
+            </div>
+          )}
         </div>
 
         <button type="submit" className="btn-primary table-setup-submit">
