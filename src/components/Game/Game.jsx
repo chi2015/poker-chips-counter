@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useGame, useCurrentTable } from '../../store/gameStore.jsx'
 import PlayerCard from '../PlayerCard/PlayerCard.jsx'
 import ActionPanel from '../ActionPanel/ActionPanel.jsx'
 import PotDisplay from '../PotDisplay/PotDisplay.jsx'
 import WinnerModal from '../WinnerModal/WinnerModal.jsx'
 import TournamentWinnerModal from '../TournamentWinnerModal/TournamentWinnerModal.jsx'
+import BlindTimer from '../BlindTimer/BlindTimer.jsx'
 import './Game.css'
 
 const STAGE_LABELS = {
@@ -19,9 +20,6 @@ const STAGE_ORDER = ['preflop', 'flop', 'turn', 'river']
 export default function Game() {
   const { dispatch } = useGame()
   const table = useCurrentTable()
-
-  const [showBlindsEditor, setShowBlindsEditor] = useState(false)
-  const [blindsForm, setBlindsForm] = useState({ smallBlind: '', bigBlind: '' })
 
   if (!table) return null
 
@@ -43,21 +41,6 @@ export default function Game() {
 
   function handleHome() {
     dispatch({ type: 'NAVIGATE', payload: 'home' })
-  }
-
-  function openBlindsEditor() {
-    setBlindsForm({ smallBlind: table.smallBlind, bigBlind: table.bigBlind })
-    setShowBlindsEditor(true)
-  }
-
-  function handleBlindsSubmit(e) {
-    e.preventDefault()
-    const sb = Number(blindsForm.smallBlind)
-    const bb = Number(blindsForm.bigBlind)
-    if (sb > 0 && bb > 0 && bb >= sb) {
-      dispatch({ type: 'UPDATE_BLINDS', payload: { smallBlind: sb, bigBlind: bb } })
-      setShowBlindsEditor(false)
-    }
   }
 
   return (
@@ -85,14 +68,19 @@ export default function Game() {
               </span>
             ))}
           </div>
-          <button className="game-blinds-btn" onClick={openBlindsEditor} title="Edit blinds">
-            Blinds: {table.smallBlind}/{table.bigBlind} ✎
-          </button>
+          {!table.levelDurationMinutes && (
+            <span className="game-blinds-info">
+              {table.smallBlind}/{table.bigBlind}
+            </span>
+          )}
         </div>
         <div className="game-topbar-right">
-          <PotDisplay pot={table.pot} pots={table.pots} players={table.players} />
+          <PotDisplay pot={table.pot} />
         </div>
       </div>
+
+      {/* Blind timer — shows level, countdown, and current/next blinds in brackets */}
+      <BlindTimer />
 
       {/* Current bet indicator */}
       {table.currentBet > 0 && (
@@ -139,53 +127,6 @@ export default function Game() {
               Betting complete
             </div>
           )}
-        </div>
-      )}
-
-      {/* Blinds editor modal */}
-      {showBlindsEditor && (
-        <div className="blinds-editor-overlay" onClick={() => setShowBlindsEditor(false)}>
-          <div className="blinds-editor-modal" onClick={e => e.stopPropagation()}>
-            <h3 className="blinds-editor-title">Edit Blinds</h3>
-            <p className="blinds-editor-note">Takes effect from the next hand.</p>
-            <form onSubmit={handleBlindsSubmit} className="blinds-editor-form">
-              <label className="blinds-editor-label">
-                Small Blind
-                <input
-                  className="blinds-editor-input"
-                  type="number"
-                  min="1"
-                  value={blindsForm.smallBlind}
-                  onChange={e => setBlindsForm(f => ({ ...f, smallBlind: e.target.value }))}
-                />
-              </label>
-              <label className="blinds-editor-label">
-                Big Blind
-                <input
-                  className="blinds-editor-input"
-                  type="number"
-                  min="1"
-                  value={blindsForm.bigBlind}
-                  onChange={e => setBlindsForm(f => ({ ...f, bigBlind: e.target.value }))}
-                />
-              </label>
-              <div className="blinds-editor-actions">
-                <button type="button" className="btn-ghost" onClick={() => setShowBlindsEditor(false)}>
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary"
-                  disabled={
-                    !blindsForm.smallBlind || !blindsForm.bigBlind ||
-                    Number(blindsForm.bigBlind) < Number(blindsForm.smallBlind)
-                  }
-                >
-                  Save
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
 
