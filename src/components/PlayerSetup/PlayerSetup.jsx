@@ -47,7 +47,7 @@ export default function PlayerSetup() {
 
   function handleStartGame() {
     if (table.players.length < 2) return
-    dispatch({ type: 'START_GAME', payload: { tableId: table.id } })
+    dispatch({ type: 'START_GAME', payload: { tableId: table.id, now: Date.now() } })
   }
 
   function handleBack() {
