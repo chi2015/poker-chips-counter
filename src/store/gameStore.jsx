@@ -5,10 +5,24 @@ import { calculatePots, mergePots } from '../utils/potCalculator.js'
 // ─── MTT Blind Structure ──────────────────────────────────────────────────────
 
 export const MTT_BLINDS = [
-  [10, 20], [15, 30], [20, 40], [25, 50], [30, 60],
-  [40, 80], [50, 100], [75, 150], [100, 200], [150, 300],
-  [200, 400], [300, 600], [400, 800], [500, 1000], [750, 1500],
-  [1000, 2000], [1500, 3000], [2000, 4000], [3000, 6000], [5000, 10000],
+  [10, 20],      // Level 1
+  [15, 30],      // Level 2
+  [25, 50],      // Level 3
+  [50, 100],     // Level 4
+  [75, 150],     // Level 5
+  [100, 200],    // Level 6
+  [150, 300],    // Level 7
+  [200, 400],    // Level 8
+  [300, 600],    // Level 9
+  [400, 800],    // Level 10
+  [500, 1000],   // Level 11
+  [600, 1200],   // Level 12
+  [800, 1600],   // Level 13
+  [1000, 2000],  // Level 14
+  [1500, 3000],  // Level 15
+  [2000, 4000],  // Level 16
+  [3000, 6000],  // Level 17
+  [5000, 10000], // Level 18
 ]
 
 /** Returns the next MTT blind level [sb, bb] with BB strictly greater than currentBigBlind. */
@@ -49,7 +63,7 @@ function createPlayer(name, chips) {
   }
 }
 
-function createTable({ name, smallBlind, bigBlind, buyIn }) {
+function createTable({ name, smallBlind, bigBlind, buyIn, levelDurationMinutes }) {
   return {
     id: generateId(),
     name,
@@ -67,6 +81,10 @@ function createTable({ name, smallBlind, bigBlind, buyIn }) {
     gameStarted: false,
     roundComplete: false,
     tournamentWinner: null,
+    levelDurationMinutes: Number(levelDurationMinutes) || 0,
+    currentLevel: 1,
+    levelStartTime: null,
+    blindsUpPending: false,
   }
 }
 
@@ -337,7 +355,7 @@ function gameReducer(state, action) {
     // ── Game Flow ─────────────────────────────────────────────────────────
 
     case 'START_GAME': {
-      const { tableId } = action.payload
+      const { tableId, now } = action.payload
       const tableIdx = state.tables.findIndex(t => t.id === tableId)
       if (tableIdx === -1) return state
 
@@ -355,6 +373,8 @@ function gameReducer(state, action) {
         hasActed: false,
       }))
 
+      const useMTT = (table.levelDurationMinutes ?? 0) > 0
+
       const newTable = {
         ...table,
         players,
@@ -366,6 +386,9 @@ function gameReducer(state, action) {
         showWinner: false,
         gameStarted: true,
         roundComplete: false,
+        currentLevel: 1,
+        levelStartTime: useMTT ? (now ?? null) : null,
+        blindsUpPending: false,
       }
 
       const { players: playersWithBlinds, pot, currentBet, activePlayerIndex } = postBlinds(newTable)
@@ -475,10 +498,15 @@ function gameReducer(state, action) {
         hasActed: false,
       }))
 
-      const blindsUp = action.payload?.blindsUp ?? false
-      const [nextSB, nextBB] = blindsUp
+      const useMTT = (table.levelDurationMinutes ?? 0) > 0
+      const shouldAdvance = useMTT && (table.blindsUpPending ?? false)
+      const currentLevel = table.currentLevel ?? 1
+      const nextLevel = shouldAdvance ? currentLevel + 1 : currentLevel
+      const [nextSB, nextBB] = shouldAdvance
         ? getNextMTTBlinds(table.bigBlind)
         : [table.smallBlind, table.bigBlind]
+      const now = action.payload?.now ?? null
+      const newLevelStartTime = shouldAdvance ? now : table.levelStartTime
 
       const newTable = {
         ...table,
@@ -492,6 +520,9 @@ function gameReducer(state, action) {
         roundComplete: false,
         smallBlind: nextSB,
         bigBlind: nextBB,
+        currentLevel: nextLevel,
+        levelStartTime: newLevelStartTime,
+        blindsUpPending: false,
       }
 
       const { players: playersWithBlinds, pot, currentBet, activePlayerIndex } = postBlinds(newTable, sbIdx, bbIdx)
@@ -838,6 +869,18 @@ function gameReducer(state, action) {
       const updatedTables = [...state.tables]
       updatedTables[tableIdx] = finalTable
       return { ...state, tables: updatedTables }
+    }
+
+    case 'BLINDS_UP_PENDING': {
+      if (!state.currentTableId) return state
+      return {
+        ...state,
+        tables: state.tables.map(t =>
+          t.id === state.currentTableId
+            ? { ...t, blindsUpPending: true }
+            : t
+        ),
+      }
     }
 
     case 'CLOSE_TABLE': {
