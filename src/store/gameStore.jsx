@@ -209,59 +209,85 @@ function postBlinds(table, sbIdxOverride, bbIdxOverride) {
 }
 
 /**
- * Compute new dealer/SB/BB roles for the next hand.
- * Works on the full allPlayers array (including busted chips=0 players) to preserve
- * seat order, then maps results back to indices within eligiblePlayers.
+ * Compute new dealer/SB/BB roles for the next hand using the Dead Button Rule.
  *
- * Rules:
- *  - Dealer always advances to the next occupied seat (empty seats are skipped)
- *  - SB = next occupied seat after Dealer
- *  - BB = next occupied seat after SB
- *  - Heads-up: Dealer == SB
+ * Dead Button Rule (MTT standard):
+ *  1. BB advances to the next active player after the previous BB — no player ever skips BB.
+ *  2. SB is the seat directly counter-clockwise from the new BB.
+ *     If that seat is empty (busted player): dead SB — no chips are posted (sbIdx = -1).
+ *  3. Dealer is the seat directly counter-clockwise from SB.
+ *     If that seat is empty: dead button — dealer marker falls on an inactive seat.
+ *     For the isDealer flag we assign the nearest active player counter-clockwise
+ *     (display-only; rotation is anchored on BB position, not dealer).
+ *  4. Heads-up: Dealer == SB, BB = the other player.
  *
- * Once NEW_HAND sets table.players = eligiblePlayers, any busted seats that
- * the button passed are automatically removed from future rotation.
+ * Rotation is anchored on the isBigBlind flag (always set on an active/just-busted player)
+ * rather than isDealer, so dead-button hands don't corrupt the next hand's rotation.
  */
-function computeMTTNextHandRoles(allPlayers, eligiblePlayers) {
-  const total = allPlayers.length
+export function computeMTTNextHandRoles(allPlayers, eligiblePlayers) {
+  const N = allPlayers.length
 
-  // Returns the index of the next player with chips > 0, searching clockwise from fromIdx.
   function nextActiveSeat(fromIdx) {
-    for (let i = 1; i <= total; i++) {
-      const idx = (fromIdx + i) % total
+    for (let i = 1; i <= N; i++) {
+      const idx = (fromIdx + i) % N
       if (allPlayers[idx].chips > 0) return idx
     }
     return -1
   }
 
+  // Use player ID for safe lookup (eligiblePlayers shares references with allPlayers via filter)
   function toEligIdx(allIdx) {
-    return eligiblePlayers.findIndex(p => p === allPlayers[allIdx])
+    return eligiblePlayers.findIndex(p => p.id === allPlayers[allIdx].id)
   }
 
-  const prevDealerAllIdx = allPlayers.findIndex(p => p.isDealer)
-  const effectivePrevDealerAllIdx = prevDealerAllIdx !== -1 ? prevDealerAllIdx : 0
+  // Anchor on BB position — always set on the player who posted BB last hand (may have chips=0)
+  const prevBBAllIdx = allPlayers.findIndex(p => p.isBigBlind)
+  const effectivePrevBBIdx = prevBBAllIdx !== -1 ? prevBBAllIdx : N - 1
 
-  // Dealer always moves to the next occupied seat — never stays on or backs up to an empty seat
-  const newDealerAllIdx = nextActiveSeat(effectivePrevDealerAllIdx)
-  if (newDealerAllIdx === -1) return { dealerIdx: 0, sbIdx: -1, bbIdx: 1 }
+  // Step 1: BB moves to the next active player after the previous BB seat
+  const newBBAllIdx = nextActiveSeat(effectivePrevBBIdx)
+  if (newBBAllIdx === -1) return { dealerIdx: 0, sbIdx: -1, bbIdx: 1 }
 
-  // Heads-up: dealer acts as small blind
+  // Heads-up: dealer acts as SB, other player is BB
   if (eligiblePlayers.length === 2) {
-    const newBBAllIdx = nextActiveSeat(newDealerAllIdx)
+    const otherAllIdx = nextActiveSeat(newBBAllIdx)
     return {
-      dealerIdx: toEligIdx(newDealerAllIdx),
-      sbIdx: toEligIdx(newDealerAllIdx),
+      dealerIdx: toEligIdx(otherAllIdx),
+      sbIdx: toEligIdx(otherAllIdx),
       bbIdx: toEligIdx(newBBAllIdx),
     }
   }
 
-  // Normal (3+ players): SB = next active after dealer, BB = next active after SB
-  const newSBAllIdx = nextActiveSeat(newDealerAllIdx)
-  const newBBAllIdx = nextActiveSeat(newSBAllIdx)
+  // Step 2: SB is the seat one step counter-clockwise from the new BB (Dead Button Rule)
+  const newSBAllIdx = (newBBAllIdx - 1 + N) % N
+  const sbIsActive = allPlayers[newSBAllIdx].chips > 0
+
+  // Step 3: Dealer is one step counter-clockwise from SB
+  const newDealerAllIdx = (newSBAllIdx - 1 + N) % N
+  const dealerIsActive = allPlayers[newDealerAllIdx].chips > 0
+
+  // Assign isDealer to an active player for display purposes.
+  // When the dealer seat is dead, walk counter-clockwise to find the nearest active player.
+  let dealerEligIdx
+  if (dealerIsActive) {
+    dealerEligIdx = toEligIdx(newDealerAllIdx)
+  } else {
+    let found = false
+    for (let i = 1; i < N; i++) {
+      const checkIdx = (newDealerAllIdx - i + N) % N
+      if (allPlayers[checkIdx].chips > 0) {
+        dealerEligIdx = toEligIdx(checkIdx)
+        found = true
+        break
+      }
+    }
+    if (!found) dealerEligIdx = toEligIdx(newBBAllIdx)
+  }
 
   return {
-    dealerIdx: toEligIdx(newDealerAllIdx),
-    sbIdx: toEligIdx(newSBAllIdx),
+    dealerIdx: dealerEligIdx,
+    // sbIdx = -1 signals a dead small blind — postBlinds skips the SB chip post
+    sbIdx: sbIsActive ? toEligIdx(newSBAllIdx) : -1,
     bbIdx: toEligIdx(newBBAllIdx),
   }
 }
@@ -523,6 +549,7 @@ function gameReducer(state, action) {
         currentLevel: nextLevel,
         levelStartTime: newLevelStartTime,
         blindsUpPending: false,
+        deadSmallBlind: sbIdx === -1,
       }
 
       const { players: playersWithBlinds, pot, currentBet, activePlayerIndex } = postBlinds(newTable, sbIdx, bbIdx)
