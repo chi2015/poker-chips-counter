@@ -115,6 +115,20 @@
   font-weight: 700;
 }
 
+/* Dead small blind notice (Dead Button Rule) */
+.game-dead-sb-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 1rem;
+  background: rgba(150, 100, 220, 0.08);
+  border-bottom: 1px solid rgba(150, 100, 220, 0.2);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #b08be0;
+  letter-spacing: 0.03em;
+}
+
 /* Current bet bar */
 .game-current-bet-bar {
   display: flex;

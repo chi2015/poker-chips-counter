@@ -82,6 +82,13 @@ export default function Game() {
       {/* Blind timer — shows level, countdown, and current/next blinds in brackets */}
       <BlindTimer />
 
+      {/* Dead small blind notice (Dead Button Rule) */}
+      {table.deadSmallBlind && table.stage === 'preflop' && (
+        <div className="game-dead-sb-bar">
+          Dead small blind — a player was eliminated in the previous hand
+        </div>
+      )}
+
       {/* Current bet indicator */}
       {table.currentBet > 0 && (
         <div className="game-current-bet-bar">
